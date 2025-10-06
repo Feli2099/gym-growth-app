@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import SessionWorkout from '@/components/workout/SessionWorkout';
+import NewWorkoutSession from '@/components/workout/NewWorkoutSession';
 import SessionHistory from '@/components/workout/SessionHistory';
 import WorkoutCalendar from '@/components/workout/WorkoutCalendar';
 import WorkoutProgress from '@/components/workout/WorkoutProgress';
@@ -55,7 +55,7 @@ const Index = () => {
       <main className="flex-1 container mx-auto px-4 py-6 pb-20">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="register" className="mt-0">
-            <SessionWorkout />
+            <NewWorkoutSession />
           </TabsContent>
           <TabsContent value="history" className="mt-0">
             <SessionHistory />
