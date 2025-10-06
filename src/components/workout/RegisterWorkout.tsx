@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus } from 'lucide-react';
+import { z } from 'zod';
+
+const workoutSchema = z.object({
+  exercise: z.string().trim().min(1, { message: 'Exercise name is required' }).max(200, { message: 'Exercise name must be less than 200 characters' }),
+  weight: z.number().positive({ message: 'Weight must be a positive number' }).max(1000, { message: 'Weight seems unrealistic (max 1000kg)' }),
+  sets: z.number().int().positive({ message: 'Sets must be a positive number' }).max(100, { message: 'Too many sets (max 100)' }),
+  reps: z.number().int().positive({ message: 'Reps must be a positive number' }).max(1000, { message: 'Too many reps (max 1000)' }),
+  notes: z.string().max(1000, { message: 'Notes must be less than 1000 characters' }).optional()
+});
 
 const RegisterWorkout = () => {
   const [exercise, setExercise] = useState('');
@@ -33,13 +42,33 @@ const RegisterWorkout = () => {
       return;
     }
 
-    const { error } = await supabase.from('workouts').insert({
-      user_id: user.id,
-      exercise,
+    // Validate input data
+    const validationResult = workoutSchema.safeParse({
+      exercise: exercise.trim(),
       weight: parseFloat(weight),
       sets: parseInt(sets),
       reps: parseInt(reps),
-      notes,
+      notes: notes.trim() || undefined
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: 'Erro de validação',
+        description: firstError.message,
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.from('workouts').insert({
+      user_id: user.id,
+      exercise: validationResult.data.exercise,
+      weight: validationResult.data.weight,
+      sets: validationResult.data.sets,
+      reps: validationResult.data.reps,
+      notes: validationResult.data.notes || null,
     });
 
     setLoading(false);
@@ -80,6 +109,7 @@ const RegisterWorkout = () => {
               placeholder="Ex: Supino reto"
               value={exercise}
               onChange={(e) => setExercise(e.target.value)}
+              maxLength={200}
               required
             />
           </div>
@@ -126,6 +156,7 @@ const RegisterWorkout = () => {
               placeholder="Anotações sobre o treino..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              maxLength={1000}
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
