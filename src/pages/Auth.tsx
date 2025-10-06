@@ -8,6 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Dumbbell } from 'lucide-react';
+import { z } from 'zod';
+
+const authSchema = z.object({
+  email: z.string().trim().email('Email inválido').max(255, 'Email muito longo'),
+  password: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres').max(100, 'Senha muito longa')
+});
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -19,8 +25,19 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = authSchema.safeParse({ email: email.trim(), password });
+    if (!validation.success) {
+      toast({
+        title: 'Dados inválidos',
+        description: validation.error.errors[0].message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(validation.data.email, validation.data.password);
     setLoading(false);
     
     if (error) {
@@ -36,8 +53,19 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validation = authSchema.safeParse({ email: email.trim(), password });
+    if (!validation.success) {
+      toast({
+        title: 'Dados inválidos',
+        description: validation.error.errors[0].message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(validation.data.email, validation.data.password);
     setLoading(false);
     
     if (error) {
