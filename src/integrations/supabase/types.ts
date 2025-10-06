@@ -14,6 +14,70 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercise_sets: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          reps: number
+          set_number: number
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          reps: number
+          set_number: number
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          reps?: number
+          set_number?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "session_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_exercises: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_checkins: {
         Row: {
           created_at: string
@@ -31,6 +95,30 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          name?: string
           user_id?: string
         }
         Relationships: []
