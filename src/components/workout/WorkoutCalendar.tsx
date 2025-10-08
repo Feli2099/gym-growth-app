@@ -59,21 +59,32 @@ const WorkoutCalendar = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <CalendarDays className="h-5 w-5 text-primary" />
-        <h2 className="text-2xl font-bold">Calendário</h2>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <CalendarDays className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-bold text-primary">Calendário</h2>
       </div>
-      <Card>
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Marque os dias que treinou</CardTitle>
+          <CardTitle className="text-primary">Marque os dias que treinou</CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center">
+        <CardContent className="flex justify-center py-4">
           <Calendar
             mode="multiple"
             selected={selectedDates}
             onDayClick={handleDateSelect}
-            className="rounded-md border pointer-events-auto"
+            className="rounded-md border-2 pointer-events-auto"
+            modifiers={{
+              workout: selectedDates,
+            }}
+            modifiersStyles={{
+              workout: {
+                backgroundColor: 'hsl(4 90% 58%)',
+                color: 'white',
+                borderRadius: '50%',
+                fontWeight: 'bold',
+              },
+            }}
           />
         </CardContent>
       </Card>

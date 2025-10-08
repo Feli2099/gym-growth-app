@@ -205,75 +205,99 @@ const NewWorkoutSession = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive">Nova Sessão de Treino</CardTitle>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <Plus className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-bold text-primary">Registrar Treino</h2>
+      </div>
+
+      <Card className="shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-primary">Nova Sessão de Treino</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="sessionName">Nome da Sessão</Label>
+            <Label htmlFor="sessionName" className="text-sm font-semibold">
+              Nome da Sessão
+            </Label>
             <Input
               id="sessionName"
               placeholder="Ex: Treino de Peito"
               value={sessionName}
               onChange={(e) => setSessionName(e.target.value)}
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sessionDate">Data</Label>
+            <Label htmlFor="sessionDate" className="text-sm font-semibold">
+              Data
+            </Label>
             <Input
               id="sessionDate"
               type="date"
               value={sessionDate}
               onChange={(e) => setSessionDate(e.target.value)}
+              className="h-11"
             />
           </div>
         </CardContent>
       </Card>
 
       {exercises.map((exercise) => (
-        <Card key={exercise.id} className="bg-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-2">
+        <Card key={exercise.id} className="shadow-md border-2">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between gap-3">
               <Input
-                placeholder="Nome do exercício"
+                placeholder="Nome do exercício (ex: Supino Reto)"
                 value={exercise.name}
                 onChange={(e) => updateExerciseName(exercise.id, e.target.value)}
+                className="h-11 font-medium"
               />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => removeExercise(exercise.id)}
+                className="hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-5 w-5" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {exercise.sets.map((set) => (
-              <div key={set.setNumber} className="flex items-center gap-2">
-                <span className="text-sm font-medium min-w-[60px]">Série {set.setNumber}</span>
-                <Input
-                  type="number"
-                  placeholder="Reps"
-                  value={set.reps || ''}
-                  onChange={(e) => updateSet(exercise.id, set.setNumber, 'reps', parseInt(e.target.value) || 0)}
-                  className="w-20"
-                />
-                <Input
-                  type="number"
-                  step="0.5"
-                  placeholder="Kg"
-                  value={set.weight || ''}
-                  onChange={(e) => updateSet(exercise.id, set.setNumber, 'weight', parseFloat(e.target.value) || 0)}
-                  className="w-24"
-                />
+              <div key={set.setNumber} className="flex items-center gap-3 bg-muted/30 rounded-lg p-3">
+                <span className="text-sm font-semibold text-primary min-w-[70px]">
+                  Série {set.setNumber}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Reps"
+                    value={set.reps || ''}
+                    onChange={(e) => updateSet(exercise.id, set.setNumber, 'reps', parseInt(e.target.value) || 0)}
+                    className="w-20 h-10"
+                    min="0"
+                  />
+                  <span className="text-xs text-muted-foreground">reps</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.5"
+                    placeholder="Kg"
+                    value={set.weight || ''}
+                    onChange={(e) => updateSet(exercise.id, set.setNumber, 'weight', parseFloat(e.target.value) || 0)}
+                    className="w-24 h-10"
+                    min="0"
+                  />
+                  <span className="text-xs text-muted-foreground">kg</span>
+                </div>
                 {exercise.sets.length > 1 && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeSet(exercise.id, set.setNumber)}
+                    className="ml-auto hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -284,7 +308,7 @@ const NewWorkoutSession = () => {
               variant="outline"
               size="sm"
               onClick={() => addSet(exercise.id)}
-              className="w-full mt-2"
+              className="w-full mt-2 h-10 border-dashed border-2 hover:border-primary hover:text-primary"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adicionar Série
@@ -296,18 +320,18 @@ const NewWorkoutSession = () => {
       <Button
         variant="outline"
         onClick={addExercise}
-        className="w-full"
+        className="w-full h-12 text-base border-dashed border-2 hover:border-primary hover:text-primary hover:bg-primary/5"
       >
-        <Plus className="h-4 w-4 mr-2" />
+        <Plus className="h-5 w-5 mr-2" />
         Adicionar Exercício
       </Button>
 
       <Button
         onClick={handleSaveSession}
         disabled={loading}
-        className="w-full"
+        className="w-full h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-shadow"
       >
-        <Save className="h-4 w-4 mr-2" />
+        <Save className="h-5 w-5 mr-2" />
         {loading ? 'Salvando...' : 'Salvar Treino'}
       </Button>
     </div>
