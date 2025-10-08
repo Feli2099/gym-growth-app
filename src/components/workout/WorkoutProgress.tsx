@@ -24,9 +24,35 @@ const WorkoutProgress = () => {
       return;
     }
 
+    // First, get user's workout sessions
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('workout_sessions')
+      .select('id')
+      .eq('user_id', user.id);
+
+    if (sessionsError) {
+      toast({
+        title: 'Erro ao carregar exercícios',
+        description: sessionsError.message,
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!sessions || sessions.length === 0) {
+      setExercises([]);
+      setLoading(false);
+      return;
+    }
+
+    const sessionIds = sessions.map(s => s.id);
+
+    // Then get exercises from those sessions
     const { data, error } = await supabase
       .from('session_exercises')
-      .select('exercise_name');
+      .select('exercise_name')
+      .in('session_id', sessionIds);
 
     if (error) {
       toast({
