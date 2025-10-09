@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { exportToCSV } from '@/utils/exportData';
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +36,7 @@ interface WorkoutSession {
 const SessionHistory = () => {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSessions();
@@ -133,11 +137,43 @@ const SessionHistory = () => {
     };
   };
 
+  const handleExportCSV = async () => {
+    const exportData = sessions.flatMap(session =>
+      session.exercises.flatMap(exercise =>
+        exercise.sets.map(set => ({
+          date: format(new Date(session.date), 'dd/MM/yyyy', { locale: ptBR }),
+          sessionName: session.name,
+          muscleGroup: (session as any).muscle_group || '-',
+          exercise: exercise.exercise_name,
+          setNumber: set.set_number,
+          reps: set.reps,
+          weight: set.weight,
+        }))
+      )
+    );
+
+    exportToCSV(
+      exportData,
+      `treinos-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    );
+
+    toast({
+      title: 'Dados exportados!',
+      description: 'Seu histórico foi exportado em formato CSV.',
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <HistoryIcon className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-bold text-primary">Histórico</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <HistoryIcon className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold text-primary">Histórico</h2>
+        </div>
+        <Button onClick={handleExportCSV} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Exportar CSV
+        </Button>
       </div>
 
       {/* Last Workout Highlight */}

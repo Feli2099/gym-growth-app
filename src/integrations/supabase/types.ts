@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_weight_tracking: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       exercise_sets: {
         Row: {
           created_at: string
@@ -78,6 +102,39 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          age: number | null
+          created_at: string
+          full_name: string | null
+          goal: string | null
+          height: number | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          full_name?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          full_name?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_checkins: {
         Row: {
           created_at: string
@@ -104,6 +161,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          muscle_group: string | null
           name: string
           user_id: string
         }
@@ -111,6 +169,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          muscle_group?: string | null
           name: string
           user_id: string
         }
@@ -118,6 +177,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          muscle_group?: string | null
           name?: string
           user_id?: string
         }

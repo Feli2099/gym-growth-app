@@ -7,7 +7,9 @@ import NewWorkoutSession from '@/components/workout/NewWorkoutSession';
 import SessionHistory from '@/components/workout/SessionHistory';
 import WorkoutCalendar from '@/components/workout/WorkoutCalendar';
 import WorkoutProgress from '@/components/workout/WorkoutProgress';
-import { Dumbbell, LogOut, Plus, History, CalendarDays, TrendingUp } from 'lucide-react';
+import WeeklySummary from '@/components/workout/WeeklySummary';
+import UserProfile from '@/components/workout/UserProfile';
+import { Dumbbell, LogOut, Plus, History, CalendarDays, TrendingUp, BarChart3, User } from 'lucide-react';
 
 const Index = () => {
   const { user, loading, signOut } = useAuth();
@@ -57,6 +59,9 @@ const Index = () => {
           <TabsContent value="register" className="mt-0">
             <NewWorkoutSession />
           </TabsContent>
+          <TabsContent value="summary" className="mt-0">
+            <WeeklySummary />
+          </TabsContent>
           <TabsContent value="history" className="mt-0">
             <SessionHistory />
           </TabsContent>
@@ -66,15 +71,18 @@ const Index = () => {
           <TabsContent value="progress" className="mt-0">
             <WorkoutProgress />
           </TabsContent>
+          <TabsContent value="profile" className="mt-0">
+            <UserProfile />
+          </TabsContent>
         </Tabs>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 border-t bg-card">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-4 gap-2 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 border-t bg-card shadow-lg">
+        <div className="container mx-auto px-2">
+          <div className="grid grid-cols-6 gap-1 py-2">
             <button
               onClick={() => setActiveTab('register')}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
                 activeTab === 'register'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted'
@@ -84,8 +92,19 @@ const Index = () => {
               <span className="text-xs font-medium">Registrar</span>
             </button>
             <button
+              onClick={() => setActiveTab('summary')}
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
+                activeTab === 'summary'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span className="text-xs font-medium">Resumo</span>
+            </button>
+            <button
               onClick={() => setActiveTab('history')}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
                 activeTab === 'history'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted'
@@ -96,7 +115,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setActiveTab('calendar')}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
                 activeTab === 'calendar'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted'
@@ -107,7 +126,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setActiveTab('progress')}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
                 activeTab === 'progress'
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted'
@@ -115,6 +134,17 @@ const Index = () => {
             >
               <TrendingUp className="h-5 w-5" />
               <span className="text-xs font-medium">Progressão</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('profile')}
+              className={`flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-colors ${
+                activeTab === 'profile'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              <User className="h-5 w-5" />
+              <span className="text-xs font-medium">Perfil</span>
             </button>
           </div>
         </div>

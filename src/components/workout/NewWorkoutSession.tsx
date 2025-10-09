@@ -3,10 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, Save } from 'lucide-react';
 import { format } from 'date-fns';
+
+const MUSCLE_GROUPS = [
+  'Peito',
+  'Costas',
+  'Ombros',
+  'Bíceps',
+  'Tríceps',
+  'Pernas',
+  'Abdômen',
+  'Glúteos',
+  'Cardio',
+];
 
 interface ExerciseSet {
   setNumber: number;
@@ -22,6 +35,7 @@ interface Exercise {
 
 const NewWorkoutSession = () => {
   const [sessionName, setSessionName] = useState('');
+  const [muscleGroup, setMuscleGroup] = useState('');
   const [sessionDate, setSessionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
@@ -136,6 +150,7 @@ const NewWorkoutSession = () => {
       .insert({
         user_id: user.id,
         name: sessionName,
+        muscle_group: muscleGroup || null,
         date: sessionDate,
       })
       .select()
@@ -200,6 +215,7 @@ const NewWorkoutSession = () => {
 
     // Reset form
     setSessionName('');
+    setMuscleGroup('');
     setSessionDate(format(new Date(), 'yyyy-MM-dd'));
     setExercises([]);
   };
@@ -227,6 +243,23 @@ const NewWorkoutSession = () => {
               onChange={(e) => setSessionName(e.target.value)}
               className="h-11"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="muscleGroup" className="text-sm font-semibold">
+              Grupo Muscular
+            </Label>
+            <Select value={muscleGroup} onValueChange={setMuscleGroup}>
+              <SelectTrigger id="muscleGroup" className="h-11">
+                <SelectValue placeholder="Selecione o grupo muscular" />
+              </SelectTrigger>
+              <SelectContent>
+                {MUSCLE_GROUPS.map((group) => (
+                  <SelectItem key={group} value={group}>
+                    {group}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="sessionDate" className="text-sm font-semibold">
