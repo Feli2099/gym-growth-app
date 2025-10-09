@@ -193,8 +193,9 @@ const WorkoutProgress = () => {
     // Get all sets for these exercises
     const { data: sets, error: setsError } = await supabase
       .from('exercise_sets')
-      .select('exercise_id, weight, reps')
-      .in('exercise_id', exerciseIds);
+      .select('exercise_id, weight, reps, set_number')
+      .in('exercise_id', exerciseIds)
+      .order('set_number', { ascending: true });
 
     if (setsError || !sets) {
       setChartData([]);
@@ -202,23 +203,24 @@ const WorkoutProgress = () => {
       return;
     }
 
-    // Group sets by session date and calculate max weight and avg reps per session
-    const dataByDate = new Map<string, { weights: number[], reps: number[] }>();
+    // Group sets by session date and use only the last set of each exercise
+    const dataByDate = new Map<string, { weight: number, reps: number }>();
 
     exercises.forEach(exercise => {
       const session = sessions.find(s => s.id === exercise.session_id);
       if (!session) return;
 
       const exerciseSets = sets.filter(s => s.exercise_id === exercise.id);
-      const weights = exerciseSets.map(s => Number(s.weight));
-      const reps = exerciseSets.map(s => Number(s.reps));
-
-      if (weights.length > 0 && reps.length > 0) {
-        if (!dataByDate.has(session.date)) {
-          dataByDate.set(session.date, { weights: [], reps: [] });
-        }
-        dataByDate.get(session.date)!.weights.push(Math.max(...weights));
-        dataByDate.get(session.date)!.reps.push(...reps);
+      
+      if (exerciseSets.length > 0) {
+        // Get the last set (highest set_number)
+        const lastSet = exerciseSets[exerciseSets.length - 1];
+        
+        // Store only the last set data for this date
+        dataByDate.set(session.date, {
+          weight: Number(lastSet.weight),
+          reps: Number(lastSet.reps)
+        });
       }
     });
 
@@ -226,8 +228,8 @@ const WorkoutProgress = () => {
     const processedData: ExerciseData[] = Array.from(dataByDate.entries())
       .map(([date, data]) => ({
         date,
-        weight: Math.max(...data.weights),
-        reps: Math.round(data.reps.reduce((a, b) => a + b, 0) / data.reps.length),
+        weight: data.weight,
+        reps: data.reps,
         displayDate: format(new Date(date), 'dd/MM', { locale: ptBR })
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
