@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportToCSV } from '@/utils/exportData';
 import {
@@ -13,6 +13,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ExerciseSet {
   set_number: number;
@@ -36,6 +47,7 @@ interface WorkoutSession {
 const SessionHistory = () => {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -163,6 +175,47 @@ const SessionHistory = () => {
     });
   };
 
+  const handleDeleteAllHistory = async () => {
+    setDeleting(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado',
+        variant: 'destructive',
+      });
+      setDeleting(false);
+      return;
+    }
+
+    // Delete all workout sessions for the user
+    // This will cascade delete all session_exercises and exercise_sets
+    const { error } = await supabase
+      .from('workout_sessions')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Erro ao apagar histórico',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setDeleting(false);
+      return;
+    }
+
+    setSessions([]);
+    setDeleting(false);
+    
+    toast({
+      title: 'Histórico apagado!',
+      description: 'Todo o histórico de treinos foi removido com sucesso.',
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -170,10 +223,39 @@ const SessionHistory = () => {
           <HistoryIcon className="h-6 w-6 text-primary" />
           <h2 className="text-2xl font-bold text-primary">Histórico</h2>
         </div>
-        <Button onClick={handleExportCSV} variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleExportCSV} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={sessions.length === 0}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Apagar Tudo
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Apagar todo o histórico?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Todas as suas sessões de treino, exercícios e séries serão permanentemente removidos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDeleteAllHistory}
+                  disabled={deleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting ? 'Apagando...' : 'Apagar Tudo'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {/* Last Workout Highlight */}
