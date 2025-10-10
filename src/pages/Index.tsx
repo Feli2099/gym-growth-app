@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import NewWorkoutSession from '@/components/workout/NewWorkoutSession';
+import ActiveSession from '@/components/workout/ActiveSession';
 import SessionHistory from '@/components/workout/SessionHistory';
 import WorkoutCalendar from '@/components/workout/WorkoutCalendar';
 import WorkoutProgress from '@/components/workout/WorkoutProgress';
@@ -15,6 +15,7 @@ const Index = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('register');
+  const [refreshHistory, setRefreshHistory] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -57,13 +58,16 @@ const Index = () => {
       <main className="flex-1 container mx-auto px-4 py-6 pb-20">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="register" className="mt-0">
-            <NewWorkoutSession />
+            <ActiveSession onSessionEnd={() => {
+              setRefreshHistory(prev => prev + 1);
+              setActiveTab('history');
+            }} />
           </TabsContent>
           <TabsContent value="summary" className="mt-0">
             <WeeklySummary />
           </TabsContent>
           <TabsContent value="history" className="mt-0">
-            <SessionHistory />
+            <SessionHistory key={refreshHistory} />
           </TabsContent>
           <TabsContent value="calendar" className="mt-0">
             <WorkoutCalendar />
