@@ -3,12 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { User, Scale, TrendingUp } from 'lucide-react';
+import { User, Scale, TrendingUp, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface UserProfileData {
   full_name: string;
@@ -33,6 +44,7 @@ const UserProfile = () => {
   const [currentWeight, setCurrentWeight] = useState('');
   const [weightHistory, setWeightHistory] = useState<WeightData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -166,6 +178,79 @@ const UserProfile = () => {
     fetchWeightHistory();
   };
 
+  const resetAllStatistics = async () => {
+    setResetting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setResetting(false);
+      return;
+    }
+
+    try {
+      // Get all workout sessions for this user
+      const { data: sessions } = await supabase
+        .from('workout_sessions')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (sessions && sessions.length > 0) {
+        const sessionIds = sessions.map(s => s.id);
+        
+        // Get all session exercises
+        const { data: exercises } = await supabase
+          .from('session_exercises')
+          .select('id')
+          .in('session_id', sessionIds);
+
+        if (exercises && exercises.length > 0) {
+          const exerciseIds = exercises.map(e => e.id);
+          
+          // Delete exercise sets
+          await supabase
+            .from('exercise_sets')
+            .delete()
+            .in('exercise_id', exerciseIds);
+        }
+
+        // Delete session exercises
+        await supabase
+          .from('session_exercises')
+          .delete()
+          .in('session_id', sessionIds);
+      }
+
+      // Delete all user data
+      await supabase.from('workout_sessions').delete().eq('user_id', user.id);
+      await supabase.from('workouts').delete().eq('user_id', user.id);
+      await supabase.from('workout_checkins').delete().eq('user_id', user.id);
+      await supabase.from('body_weight_tracking').delete().eq('user_id', user.id);
+      await supabase.from('user_profiles').delete().eq('user_id', user.id);
+
+      toast({
+        title: 'Todos os dados foram apagados com sucesso.',
+        description: 'Seu aplicativo foi resetado ao estado inicial.',
+      });
+
+      // Reset local state
+      setProfile({
+        full_name: '',
+        age: '',
+        height: '',
+        goal: '',
+      });
+      setCurrentWeight('');
+      setWeightHistory([]);
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao resetar estatísticas',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
@@ -284,6 +369,51 @@ const UserProfile = () => {
               <p className="font-medium">Registre pelo menos 2 medições de peso para ver o gráfico de evolução.</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <Trash2 className="h-5 w-5" />
+            Zona de Perigo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Resetar todas as estatísticas irá apagar permanentemente todo o histórico de treinos, 
+            séries registradas, pesos, médias e informações do perfil. Esta ação não pode ser desfeita.
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                disabled={resetting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Resetar Estatísticas
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza de que deseja apagar todos os dados?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Todos os seus treinos, séries, 
+                  pesos registrados e informações pessoais serão permanentemente excluídos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={resetAllStatistics}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sim, apagar tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>
