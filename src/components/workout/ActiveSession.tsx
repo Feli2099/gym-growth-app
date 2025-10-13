@@ -46,6 +46,7 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [suggestedWeight, setSuggestedWeight] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -88,6 +89,47 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
     );
 
     setExercises(exercisesWithSets);
+  };
+
+  const fetchLastWeightSuggestion = async (exerciseName: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get last 2 sessions with this exercise
+    const { data: sessions } = await supabase
+      .from('workout_sessions')
+      .select('id, date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(5);
+
+    if (!sessions || sessions.length === 0) return;
+
+    const sessionIds = sessions.map(s => s.id);
+
+    const { data: exercises } = await supabase
+      .from('session_exercises')
+      .select('id, session_id')
+      .eq('exercise_name', exerciseName)
+      .in('session_id', sessionIds)
+      .limit(1);
+
+    if (!exercises || exercises.length === 0) {
+      setSuggestedWeight(null);
+      return;
+    }
+
+    const { data: sets } = await supabase
+      .from('exercise_sets')
+      .select('weight')
+      .eq('exercise_id', exercises[0].id)
+      .order('set_number', { ascending: false })
+      .limit(1);
+
+    if (sets && sets.length > 0) {
+      const lastWeight = Number(sets[0].weight);
+      setSuggestedWeight(lastWeight + 2.5);
+    }
   };
 
   const startSession = async () => {
@@ -329,11 +371,12 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
             <Label htmlFor="exerciseName">Exercício</Label>
             {exercises.length > 0 && (
               <select
-                className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                className="w-full h-11 px-3 rounded-md border border-input bg-background text-base"
                 value={selectedExerciseId || ''}
                 onChange={(e) => {
                   setSelectedExerciseId(e.target.value);
                   setCurrentExerciseName('');
+                  setSuggestedWeight(null);
                 }}
               >
                 <option value="">Novo exercício...</option>
@@ -347,9 +390,16 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
                 id="exerciseName"
                 placeholder="Nome do exercício"
                 value={currentExerciseName}
+                className="h-11 text-base"
                 onChange={(e) => {
-                  setCurrentExerciseName(e.target.value);
+                  const name = e.target.value;
+                  setCurrentExerciseName(name);
                   setSelectedExerciseId(null);
+                  if (name.trim().length > 2) {
+                    fetchLastWeightSuggestion(name.trim());
+                  } else {
+                    setSuggestedWeight(null);
+                  }
                 }}
               />
             )}
@@ -357,66 +407,95 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="reps">Repetições</Label>
+              <Label htmlFor="reps" className="text-sm">Repetições</Label>
               <Input
                 id="reps"
                 type="number"
                 placeholder="0"
                 value={currentReps}
+                className="h-12 text-base"
                 onChange={(e) => setCurrentReps(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Carga (kg)</Label>
+              <Label htmlFor="weight" className="text-sm">
+                Carga (kg)
+                {suggestedWeight && (
+                  <span className="ml-2 text-xs text-primary font-normal">
+                    Sugestão: {suggestedWeight}kg
+                  </span>
+                )}
+              </Label>
               <Input
                 id="weight"
                 type="number"
                 step="0.5"
-                placeholder="0"
+                placeholder={suggestedWeight ? String(suggestedWeight) : "0"}
                 value={currentWeight}
+                className="h-12 text-base"
                 onChange={(e) => setCurrentWeight(e.target.value)}
               />
             </div>
           </div>
 
-          <Button onClick={addSet} disabled={loading} className="w-full" size="lg">
+          <Button onClick={addSet} disabled={loading} className="w-full h-12 text-base" size="lg">
             <Plus className="h-5 w-5 mr-2" />
             {loading ? 'Salvando...' : 'Registrar Série'}
           </Button>
         </CardContent>
       </Card>
 
-      {exercises.map(exercise => (
-        <Card key={exercise.id}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{exercise.exercise_name}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {exercise.sets.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma série registrada ainda
-              </p>
-            ) : (
-              exercise.sets.map(set => (
-                <div key={set.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
-                  <div className="flex items-center gap-4">
-                    <span className="font-semibold text-primary">Série {set.set_number}</span>
-                    <span className="text-sm text-muted-foreground">{set.reps} reps</span>
-                    <span className="font-bold">{set.weight} kg</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteSet(exercise.id, set.id!)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+      {exercises.map(exercise => {
+        const totalVolume = exercise.sets.reduce((sum, set) => 
+          sum + (set.weight * set.reps), 0
+        );
+        const maxWeight = exercise.sets.length > 0 
+          ? Math.max(...exercise.sets.map(s => s.weight))
+          : 0;
+
+        return (
+          <Card key={exercise.id}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">{exercise.exercise_name}</CardTitle>
+                <div className="flex gap-3 text-xs text-muted-foreground">
+                  <span className="font-semibold text-primary">Vol: {totalVolume.toFixed(0)}kg</span>
+                  {maxWeight > 0 && (
+                    <>
+                      <span>•</span>
+                      <span>PR: {maxWeight}kg</span>
+                    </>
+                  )}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {exercise.sets.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma série registrada ainda
+                </p>
+              ) : (
+                exercise.sets.map(set => (
+                  <div key={set.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
+                    <div className="flex items-center gap-4">
+                      <span className="font-semibold text-primary min-w-[60px]">Série {set.set_number}</span>
+                      <span className="text-sm text-muted-foreground">{set.reps} reps</span>
+                      <span className="font-bold">{set.weight} kg</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteSet(exercise.id, set.id!)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
 
       <AlertDialog open={showEndDialog} onOpenChange={setShowEndDialog}>
         <AlertDialogContent>

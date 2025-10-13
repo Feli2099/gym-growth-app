@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download, Trash2 } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download, Trash2, Search, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportToCSV } from '@/utils/exportData';
 import {
@@ -46,13 +47,30 @@ interface WorkoutSession {
 
 const SessionHistory = () => {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<WorkoutSession[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [exercisePRs, setExercisePRs] = useState<Map<string, number>>(new Map());
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredSessions(sessions);
+    } else {
+      const term = searchTerm.toLowerCase();
+      const filtered = sessions.filter(session => 
+        session.name.toLowerCase().includes(term) ||
+        session.exercises.some(ex => ex.exercise_name.toLowerCase().includes(term)) ||
+        format(new Date(session.date), 'dd/MM/yyyy').includes(term)
+      );
+      setFilteredSessions(filtered);
+    }
+  }, [searchTerm, sessions]);
 
   const fetchSessions = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +132,26 @@ const SessionHistory = () => {
     );
 
     setSessions(sessionsWithExercises);
+    setFilteredSessions(sessionsWithExercises);
+    calculatePRs(sessionsWithExercises);
     setLoading(false);
+  };
+
+  const calculatePRs = (allSessions: WorkoutSession[]) => {
+    const prs = new Map<string, number>();
+    
+    allSessions.forEach(session => {
+      session.exercises.forEach(exercise => {
+        exercise.sets.forEach(set => {
+          const currentPR = prs.get(exercise.exercise_name) || 0;
+          if (set.weight > currentPR) {
+            prs.set(exercise.exercise_name, set.weight);
+          }
+        });
+      });
+    });
+
+    setExercisePRs(prs);
   };
 
   if (loading) {
@@ -135,17 +172,21 @@ const SessionHistory = () => {
     );
   }
 
-  const latestSession = sessions[0];
+  const displaySessions = filteredSessions.length > 0 ? filteredSessions : sessions;
+
+  const latestSession = displaySessions[0];
 
   const calculateExerciseStats = (exercise: SessionExercise) => {
-    if (exercise.sets.length === 0) return { avgWeight: 0, avgReps: 0 };
+    if (exercise.sets.length === 0) return { avgWeight: 0, avgReps: 0, totalVolume: 0 };
     
     const totalWeight = exercise.sets.reduce((sum, set) => sum + set.weight, 0);
     const totalReps = exercise.sets.reduce((sum, set) => sum + set.reps, 0);
+    const totalVolume = exercise.sets.reduce((sum, set) => sum + (set.weight * set.reps), 0);
     
     return {
       avgWeight: totalWeight / exercise.sets.length,
       avgReps: totalReps / exercise.sets.length,
+      totalVolume,
     };
   };
 
@@ -258,6 +299,29 @@ const SessionHistory = () => {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por exercício, data ou nome do treino..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-11 text-base"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {filteredSessions.length === 0 && searchTerm && (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Nenhum resultado encontrado para "{searchTerm}"
+          </CardContent>
+        </Card>
+      )}
+
       {/* Last Workout Highlight */}
       <Card className="border-2 border-primary shadow-lg">
         <CardHeader className="pb-3">
@@ -301,10 +365,13 @@ const SessionHistory = () => {
       </Card>
 
       {/* All Sessions */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold">Todos os Treinos</h3>
-        <Accordion type="single" collapsible className="space-y-3">
-          {sessions.map((session, index) => (
+      {filteredSessions.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold">
+            {searchTerm ? `${filteredSessions.length} resultado(s)` : 'Todos os Treinos'}
+          </h3>
+          <Accordion type="single" collapsible className="space-y-3">
+            {displaySessions.map((session, index) => (
             <div key={session.id}>
               {index > 0 && (
                 <div className="flex items-center gap-4 my-4">
@@ -334,33 +401,54 @@ const SessionHistory = () => {
                   <div className="space-y-5">
                     {session.exercises.map((exercise) => {
                       const stats = calculateExerciseStats(exercise);
+                      const isPR = exercisePRs.get(exercise.exercise_name) === Math.max(...exercise.sets.map(s => s.weight));
+                      
                       return (
                         <div key={exercise.id} className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-base">{exercise.exercise_name}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-base">{exercise.exercise_name}</h4>
+                              {isPR && Math.max(...exercise.sets.map(s => s.weight)) === exercisePRs.get(exercise.exercise_name) && (
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                                  <Award className="h-3.5 w-3.5" />
+                                  PR
+                                </span>
+                              )}
+                            </div>
                             <div className="flex gap-3 text-xs text-muted-foreground">
                               <span className="font-medium text-primary">
-                                {stats.avgWeight.toFixed(1)} kg média
+                                Vol: {stats.totalVolume.toFixed(0)}kg
                               </span>
+                              <span>•</span>
+                              <span>{stats.avgWeight.toFixed(1)} kg média</span>
                               <span>•</span>
                               <span>{stats.avgReps.toFixed(1)} reps</span>
                             </div>
                           </div>
                           <div className="space-y-2">
-                            {exercise.sets.map((set) => (
-                              <div
-                                key={set.set_number}
-                                className="flex items-center gap-4 text-sm bg-muted/40 rounded-lg px-4 py-3 hover:bg-muted/60 transition-colors"
-                              >
-                                <span className="font-semibold text-primary min-w-[70px]">
-                                  Série {set.set_number}
-                                </span>
-                                <span className="text-muted-foreground">{set.reps} reps</span>
-                                <span className="ml-auto font-bold text-foreground">
-                                  {set.weight} kg
-                                </span>
-                              </div>
-                            ))}
+                            {exercise.sets.map((set) => {
+                              const isSetPR = set.weight === exercisePRs.get(exercise.exercise_name);
+                              
+                              return (
+                                <div
+                                  key={set.set_number}
+                                  className={`flex items-center gap-4 text-sm rounded-lg px-4 py-3 transition-colors ${
+                                    isSetPR 
+                                      ? 'bg-primary/10 border-2 border-primary/30' 
+                                      : 'bg-muted/40 hover:bg-muted/60'
+                                  }`}
+                                >
+                                  <span className="font-semibold text-primary min-w-[70px]">
+                                    Série {set.set_number}
+                                  </span>
+                                  <span className="text-muted-foreground">{set.reps} reps</span>
+                                  <span className="ml-auto font-bold text-foreground flex items-center gap-2">
+                                    {set.weight} kg
+                                    {isSetPR && <Award className="h-3.5 w-3.5 text-primary" />}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -372,6 +460,7 @@ const SessionHistory = () => {
           ))}
         </Accordion>
       </div>
+      )}
     </div>
   );
 };
