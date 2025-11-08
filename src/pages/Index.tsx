@@ -9,6 +9,7 @@ import WorkoutCalendar from '@/components/workout/WorkoutCalendar';
 import WorkoutProgress from '@/components/workout/WorkoutProgress';
 import WeeklySummary from '@/components/workout/WeeklySummary';
 import UserProfile from '@/components/workout/UserProfile';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Dumbbell, LogOut, Plus, History, CalendarDays, TrendingUp, BarChart3, User } from 'lucide-react';
 
 const Index = () => {
@@ -49,9 +50,12 @@ const Index = () => {
             <Dumbbell className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">FitProgress</h1>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
