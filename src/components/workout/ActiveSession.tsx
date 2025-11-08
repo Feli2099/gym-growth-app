@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, CheckCircle2, Play } from 'lucide-react';
+import RestTimer from './RestTimer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,9 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suggestedWeight, setSuggestedWeight] = useState<number | null>(null);
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  const [restTime, setRestTime] = useState(60);
+  const [lastCompletedSet, setLastCompletedSet] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -253,6 +257,8 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         set_number: setNumber,
         reps: parseInt(currentReps),
         weight: parseFloat(currentWeight),
+        completed_at: new Date().toISOString(),
+        rest_time: restTime,
       })
       .select()
       .single();
@@ -276,6 +282,8 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
     setCurrentReps('');
     setCurrentWeight('');
     setLoading(false);
+    setLastCompletedSet(exerciseId);
+    setShowRestTimer(true);
 
     toast({
       title: 'Série registrada!',
@@ -362,11 +370,28 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         </CardHeader>
       </Card>
 
+      {showRestTimer && (
+        <RestTimer
+          defaultTime={restTime}
+          onComplete={() => setShowRestTimer(false)}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Registrar Série</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="restTime" className="text-sm">Tempo de Descanso (segundos)</Label>
+            <Input
+              id="restTime"
+              type="number"
+              value={restTime}
+              onChange={(e) => setRestTime(parseInt(e.target.value) || 60)}
+              className="h-11 text-base"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="exerciseName">Exercício</Label>
             {exercises.length > 0 && (

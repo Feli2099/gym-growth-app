@@ -40,26 +40,32 @@ export type Database = {
       }
       exercise_sets: {
         Row: {
+          completed_at: string | null
           created_at: string
           exercise_id: string
           id: string
           reps: number
+          rest_time: number | null
           set_number: number
           weight: number
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           exercise_id: string
           id?: string
           reps: number
+          rest_time?: number | null
           set_number: number
           weight: number
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           exercise_id?: string
           id?: string
           reps?: number
+          rest_time?: number | null
           set_number?: number
           weight?: number
         }

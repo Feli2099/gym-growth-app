@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download, Trash2, Search, Award } from 'lucide-react';
+import { Calendar, Dumbbell, TrendingUp, History as HistoryIcon, Download, Trash2, Search, Award, Edit, Trash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportToCSV } from '@/utils/exportData';
+import EditSessionDialog from './EditSessionDialog';
 import {
   Accordion,
   AccordionContent,
@@ -52,6 +53,7 @@ const SessionHistory = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [exercisePRs, setExercisePRs] = useState<Map<string, number>>(new Map());
+  const [editingSession, setEditingSession] = useState<WorkoutSession | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,6 +259,29 @@ const SessionHistory = () => {
     });
   };
 
+  const handleDeleteSession = async (sessionId: string) => {
+    const { error } = await supabase
+      .from('workout_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) {
+      toast({
+        title: 'Erro ao apagar treino',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await fetchSessions();
+    
+    toast({
+      title: 'Treino removido',
+      description: 'O treino foi deletado com sucesso.',
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -384,10 +409,52 @@ const SessionHistory = () => {
               )}
               <AccordionItem value={session.id} className="border-2 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/50">
-                  <div className="flex flex-col items-start gap-2 text-left w-full">
+                  <div className="flex flex-col items-start gap-2 text-left w-full pr-4">
                     <div className="flex items-center justify-between w-full">
                       <span className="font-semibold text-lg">{session.name}</span>
-                      <div className="h-2 w-2 rounded-full bg-primary" />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSession(session);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir este treino?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir "{session.name}"? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSession(session.id);
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -460,6 +527,18 @@ const SessionHistory = () => {
           ))}
         </Accordion>
       </div>
+      )}
+
+      {editingSession && (
+        <EditSessionDialog
+          open={!!editingSession}
+          onOpenChange={(open) => !open && setEditingSession(null)}
+          sessionId={editingSession.id}
+          sessionName={editingSession.name}
+          sessionDate={editingSession.date}
+          exercises={editingSession.exercises}
+          onSave={fetchSessions}
+        />
       )}
     </div>
   );
