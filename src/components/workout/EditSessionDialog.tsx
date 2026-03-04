@@ -84,7 +84,7 @@ const EditSessionDialog = ({
         .eq('id', exercise.id);
 
       if (exerciseError) {
-        console.error('Error updating exercise:', exerciseError);
+        if (import.meta.env.DEV) console.error('Error updating exercise:', exerciseError);
         continue;
       }
 
@@ -100,7 +100,7 @@ const EditSessionDialog = ({
             .eq('id', set.id);
 
           if (setError) {
-            console.error('Error updating set:', setError);
+            if (import.meta.env.DEV) console.error('Error updating set:', setError);
           }
         }
       }
