@@ -87,7 +87,7 @@ const SessionHistory = () => {
       .order('date', { ascending: false });
 
     if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError);
+      if (import.meta.env.DEV) console.error('Error fetching sessions:', sessionsError);
       setLoading(false);
       return;
     }
