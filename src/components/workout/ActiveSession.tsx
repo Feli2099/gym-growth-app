@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, CheckCircle2, Play } from 'lucide-react';
 import RestTimer from './RestTimer';
+import ExerciseSuggestions from './ExerciseSuggestions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -92,7 +93,24 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
       })
     );
 
-    setExercises(exercisesWithSets);
+      setExercises(exercisesWithSets);
+  };
+
+  const handleExerciseSelectedFromSuggestions = (exerciseId: string, exerciseName: string) => {
+    setExercises(prev => [...prev, { id: exerciseId, exercise_name: exerciseName, sets: [] }]);
+    setSelectedExerciseId(exerciseId);
+    setCurrentExerciseName('');
+  };
+
+  const saveExerciseToCatalog = async (exerciseName: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from('user_exercises')
+      .upsert(
+        { user_id: user.id, exercise_name: exerciseName, muscle_group: 'Outros' },
+        { onConflict: 'user_id,exercise_name' }
+      );
   };
 
   const fetchLastWeightSuggestion = async (exerciseName: string) => {
@@ -235,6 +253,8 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         sets: [],
       }]);
       setSelectedExerciseId(newExercise.id);
+      // Auto-save to catalog for future suggestions
+      await saveExerciseToCatalog(newExercise.exercise_name);
     }
 
     if (!exerciseId) {
@@ -376,6 +396,12 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
           onComplete={() => setShowRestTimer(false)}
         />
       )}
+
+      <ExerciseSuggestions
+        sessionId={sessionId}
+        onExerciseSelected={handleExerciseSelectedFromSuggestions}
+        existingExerciseNames={exercises.map(e => e.exercise_name)}
+      />
 
       <Card>
         <CardHeader>

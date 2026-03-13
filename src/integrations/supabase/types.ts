@@ -108,6 +108,30 @@ export type Database = {
           },
         ]
       }
+      user_exercises: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          id: string
+          muscle_group: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          id?: string
+          muscle_group?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          id?: string
+          muscle_group?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           age: number | null
