@@ -253,6 +253,8 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         sets: [],
       }]);
       setSelectedExerciseId(newExercise.id);
+      // Auto-save to catalog for future suggestions
+      await saveExerciseToCatalog(newExercise.exercise_name);
     }
 
     if (!exerciseId) {
