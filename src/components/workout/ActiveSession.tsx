@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, CheckCircle2, Play } from 'lucide-react';
 import RestTimer from './RestTimer';
 import ExerciseSuggestions from './ExerciseSuggestions';
+import LastPerformance from './LastPerformance';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -507,17 +508,20 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         return (
           <Card key={exercise.id}>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{exercise.exercise_name}</CardTitle>
-                <div className="flex gap-3 text-xs text-muted-foreground">
-                  <span className="font-semibold text-primary">Vol: {totalVolume.toFixed(0)}kg</span>
-                  {maxWeight > 0 && (
-                    <>
-                      <span>•</span>
-                      <span>PR: {maxWeight}kg</span>
-                    </>
-                  )}
+              <div>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">{exercise.exercise_name}</CardTitle>
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    <span className="font-semibold text-primary">Vol: {totalVolume.toFixed(0)}kg</span>
+                    {maxWeight > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>PR: {maxWeight}kg</span>
+                      </>
+                    )}
+                  </div>
                 </div>
+                <LastPerformance exerciseName={exercise.exercise_name} currentSessionId={sessionId!} />
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
