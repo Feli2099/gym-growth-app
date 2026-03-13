@@ -397,6 +397,12 @@ const ActiveSession = ({ onSessionEnd }: ActiveSessionProps) => {
         />
       )}
 
+      <ExerciseSuggestions
+        sessionId={sessionId}
+        onExerciseSelected={handleExerciseSelectedFromSuggestions}
+        existingExerciseNames={exercises.map(e => e.exercise_name)}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Registrar Série</CardTitle>
