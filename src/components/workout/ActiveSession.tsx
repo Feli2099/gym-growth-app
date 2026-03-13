@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2, CheckCircle2, Play } from 'lucide-react';
 import RestTimer from './RestTimer';
 import ExerciseSuggestions from './ExerciseSuggestions';
+import LastPerformance from './LastPerformance';
 import {
   AlertDialog,
   AlertDialogAction,
