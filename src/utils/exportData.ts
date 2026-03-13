@@ -10,19 +10,25 @@ interface WorkoutExportData {
   weight: number;
 }
 
+const escapeCSV = (val: string | number): string => {
+  const str = String(val);
+  const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
+
 export const exportToCSV = (data: WorkoutExportData[], filename: string) => {
   const headers = ['Data', 'Nome da Sessão', 'Grupo Muscular', 'Exercício', 'Série', 'Repetições', 'Carga (kg)'];
   
   const csvContent = [
-    headers.join(','),
+    headers.map(h => escapeCSV(h)).join(','),
     ...data.map(row => [
-      row.date,
-      row.sessionName,
-      row.muscleGroup || '-',
-      row.exercise,
-      row.setNumber,
-      row.reps,
-      row.weight
+      escapeCSV(row.date),
+      escapeCSV(row.sessionName),
+      escapeCSV(row.muscleGroup || '-'),
+      escapeCSV(row.exercise),
+      escapeCSV(row.setNumber),
+      escapeCSV(row.reps),
+      escapeCSV(row.weight)
     ].join(','))
   ].join('\n');
 
